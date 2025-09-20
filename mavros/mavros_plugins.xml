@@ -161,5 +161,12 @@ Handles WHEEL_ENCODERS custom messages (ID: 42003) for differential drive robots
 
 Subscribes to cmd_vel and sends velocity commands via MAVLink.</description>
   </class>
+  <class name="vtx_control" type="mavros::plugin::PluginFactoryTemplate&lt;mavros::std_plugins::VTXControlPlugin&gt;" base_class_type="mavros::plugin::PluginFactory">
+    <description>@brief VTX Control plugin
+@plugin vtx_control
+
+Handles video transmitter control messages. Subscribes to VTXControl messages
+and sends RC_CHANNELS MAVLink messages at 1Hz. Also publishes current status.</description>
+  </class>
 </library>
 <!-- [[[end]]] (checksum: e47485a8565112ddf4058c7a77bcc519) -->
