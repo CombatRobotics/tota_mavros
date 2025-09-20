@@ -23,7 +23,10 @@
 tof_ranges:
   ros__parameters:
     raw_topic: "~/raw"
-    field_of_view: 1.57  # 90 degrees in radians for testing
+    fov_horizontal: 60.0    # Total horizontal field of view in degrees
+    fov_vertical: 60.0      # Total vertical field of view in degrees
+    resolution: 8           # Grid resolution: 4 for 4x4, 8 for 8x8
+    orientation: "z_forward"  # Coordinate frame: "x_forward" or "z_forward"
 
 wheel_encoders:
   ros__parameters:
