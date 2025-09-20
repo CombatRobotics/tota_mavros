@@ -14,6 +14,7 @@
       - tof_meta          # TOF_L7CX_META (42002) 
       - wheel_encoders    # WHEEL_ENCODERS (42003)
       - velocity_control  # Velocity command sender
+      - vtx_control       # VTX control
       
       # Essential Standard Plugins  
       - imu               # IMU data processing

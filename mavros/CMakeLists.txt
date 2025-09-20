@@ -57,6 +57,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(tota_interfaces REQUIRED)
 
 include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -170,6 +171,7 @@ add_library(mavros_plugins SHARED
   src/plugins/tof_meta.cpp        # TOF_L7CX_META handler
   src/plugins/wheel_encoders.cpp  # WHEEL_ENCODERS handler
   src/plugins/velocity_control.cpp # Velocity control via cmd_vel
+  src/plugins/vtx_control.cpp      # VTX control plugin for video transmitter settings
 )
 add_dependencies(mavros_plugins
   mavros
@@ -188,6 +190,7 @@ ament_target_dependencies(mavros_plugins
   pluginlib
   nav_msgs
   trajectory_msgs
+  tota_interfaces
   rclcpp
   rclcpp_components
   rcpputils
