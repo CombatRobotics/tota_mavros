@@ -1,46 +1,282 @@
 <?xml version="1.0"?>
-<!--
-  Minimal MAVLink 2 dialect for "my‑robot"
-  (compact dialect with only needed messages)
-
-  Keeps: HEARTBEAT, HIGHRES_IMU, GPS, BATTERY_STATUS, RADIO_STATUS, etc.
-  Adds : VL53L7CX range array & meta, absolute wheel encoders.
-
-  * Message‑ID range 42000+ is reserved for project‑specific packets.
-  * version = 2 (MAVLink v2 framing, start byte 0xFD).
-  * ASCII only to avoid Windows encoding issues.
--->
 <mavlink>
-  <!-- Pull in baseline common messages -->
-  <include>common.xml</include>
-  <version>2</version>
+    <version>2</version>
+    <dialect>0</dialect>
 
-  <messages>
-    <!-- full 8×8 range map (128 B) fits comfortably in one MAVLink‑2 frame -->
-    <message id="42001" name="TOF_L7CX_RANGES">
-      <description>8×8 zone distances from VL53L7CX in millimetres.</description>
-      <field type="uint64_t" name="time_us" units="us"/>
-      <field type="uint16_t[64]" name="range_mm" units="mm"/>
-    </message>
+    <enums>
+        <!-- MAV_TYPE enum -->
+        <enum name="MAV_TYPE">
+            <description>MAVLINK component type reported in HEARTBEAT message</description>
+            <entry value="0" name="MAV_TYPE_GENERIC">
+                <description>Generic micro air vehicle</description>
+            </entry>
+            <entry value="1" name="MAV_TYPE_FIXED_WING">
+                <description>Fixed wing aircraft</description>
+            </entry>
+            <entry value="2" name="MAV_TYPE_QUADROTOR">
+                <description>Quadrotor</description>
+            </entry>
+            <entry value="10" name="MAV_TYPE_GROUND_ROVER">
+                <description>Ground rover</description>
+            </entry>
+            <entry value="12" name="MAV_TYPE_HEXAROTOR">
+                <description>Hexarotor</description>
+            </entry>
+            <entry value="13" name="MAV_TYPE_OCTOROTOR">
+                <description>Octorotor</description>
+            </entry>
+            <entry value="18" name="MAV_TYPE_COAXIAL">
+                <description>Coaxial helicopter</description>
+            </entry>
+        </enum>
 
-    <!-- optional meta‑data block: status + signal strength per zone -->
-    <message id="42002" name="TOF_L7CX_META">
-      <description>Status (0 = valid) and signal strength for each VL53L7CX zone.</description>
-      <field type="uint64_t" name="time_us" units="us"/>
-      <field type="uint8_t[64]"  name="status"/>
-      <field type="uint16_t[64]" name="signal" units="kcps"/>
-    </message>
+        <!-- MAV_AUTOPILOT enum -->
+        <enum name="MAV_AUTOPILOT">
+            <description>Micro air vehicle / autopilot class</description>
+            <entry value="0" name="MAV_AUTOPILOT_GENERIC">
+                <description>Generic autopilot, full support for everything</description>
+            </entry>
+            <entry value="3" name="MAV_AUTOPILOT_APM">
+                <description>APM autopilot</description>
+            </entry>
+            <entry value="12" name="MAV_AUTOPILOT_PX4">
+                <description>PX4 autopilot</description>
+            </entry>
+        </enum>
 
-    <!-- signed wheel-tick counters + absolute CAM position -->
-    <message id="42003" name="WHEEL_ENCODERS">
-      <description>Cumulative wheel ticks (CW = +, CCW = –) and the absolute 12-bit
-      AS5600 CAM position used by the jumping mechanism.</description>
+        <!-- MAV_MODE_FLAG enum -->
+        <enum name="MAV_MODE_FLAG" bitmask="true">
+            <description>These flags encode the MAV mode</description>
+            <entry value="1" name="MAV_MODE_FLAG_CUSTOM_MODE_ENABLED">
+                <description>0b00000001 Reserved for future use</description>
+            </entry>
+            <entry value="2" name="MAV_MODE_FLAG_TEST_ENABLED">
+                <description>0b00000010 system has a test mode enabled</description>
+            </entry>
+            <entry value="4" name="MAV_MODE_FLAG_AUTO_ENABLED">
+                <description>0b00000100 autonomous mode enabled</description>
+            </entry>
+            <entry value="8" name="MAV_MODE_FLAG_GUIDED_ENABLED">
+                <description>0b00001000 guided mode enabled</description>
+            </entry>
+            <entry value="16" name="MAV_MODE_FLAG_STABILIZE_ENABLED">
+                <description>0b00010000 stabilize mode enabled</description>
+            </entry>
+            <entry value="32" name="MAV_MODE_FLAG_HIL_ENABLED">
+                <description>0b00100000 hardware in the loop simulation</description>
+            </entry>
+            <entry value="64" name="MAV_MODE_FLAG_MANUAL_INPUT_ENABLED">
+                <description>0b01000000 remote control input is enabled</description>
+            </entry>
+            <entry value="128" name="MAV_MODE_FLAG_SAFETY_ARMED">
+                <description>0b10000000 MAV safety set to armed</description>
+            </entry>
+        </enum>
 
-      <field type="uint64_t" name="time_us"     units="us"/>
-      <field type="int32_t"  name="left_ticks"  units="ticks"/>
-      <field type="int32_t"  name="right_ticks" units="ticks"/>
-      <field type="uint16_t" name="cam_pos"     units="raw12"/>
-    </message>
-  </messages>
+        <!-- MAV_STATE enum -->
+        <enum name="MAV_STATE">
+            <description>System status flag</description>
+            <entry value="0" name="MAV_STATE_UNINIT">
+                <description>Uninitialized system, state is unknown</description>
+            </entry>
+            <entry value="1" name="MAV_STATE_BOOT">
+                <description>System is booting up</description>
+            </entry>
+            <entry value="2" name="MAV_STATE_CALIBRATING">
+                <description>System is calibrating and not flight-ready</description>
+            </entry>
+            <entry value="3" name="MAV_STATE_STANDBY">
+                <description>System is grounded and on standby</description>
+            </entry>
+            <entry value="4" name="MAV_STATE_ACTIVE">
+                <description>System is active and might be already airborne</description>
+            </entry>
+            <entry value="5" name="MAV_STATE_CRITICAL">
+                <description>System is in a non-normal flight mode</description>
+            </entry>
+            <entry value="6" name="MAV_STATE_EMERGENCY">
+                <description>System is in an emergency state</description>
+            </entry>
+            <entry value="7" name="MAV_STATE_POWEROFF">
+                <description>System is about to shut-down</description>
+            </entry>
+        </enum>
+
+        <!-- MAV_BATTERY_FUNCTION enum -->
+        <enum name="MAV_BATTERY_FUNCTION">
+            <description>Enumeration of battery functions</description>
+            <entry value="0" name="MAV_BATTERY_FUNCTION_UNKNOWN">
+                <description>Battery function is unknown</description>
+            </entry>
+            <entry value="1" name="MAV_BATTERY_FUNCTION_ALL">
+                <description>Battery provides power to all systems</description>
+            </entry>
+            <entry value="2" name="MAV_BATTERY_FUNCTION_PROPULSION">
+                <description>Battery for the propulsion system</description>
+            </entry>
+            <entry value="3" name="MAV_BATTERY_FUNCTION_AVIONICS">
+                <description>Avionics battery</description>
+            </entry>
+        </enum>
+
+        <!-- MAV_BATTERY_TYPE enum -->
+        <enum name="MAV_BATTERY_TYPE">
+            <description>Enumeration of battery types</description>
+            <entry value="0" name="MAV_BATTERY_TYPE_UNKNOWN">
+                <description>Not specified</description>
+            </entry>
+            <entry value="1" name="MAV_BATTERY_TYPE_LIPO">
+                <description>Lithium polymer battery</description>
+            </entry>
+            <entry value="2" name="MAV_BATTERY_TYPE_LIFE">
+                <description>Lithium-iron-phosphate battery</description>
+            </entry>
+            <entry value="3" name="MAV_BATTERY_TYPE_LION">
+                <description>Lithium-ION battery</description>
+            </entry>
+            <entry value="4" name="MAV_BATTERY_TYPE_NIMH">
+                <description>Nickel metal hydride battery</description>
+            </entry>
+        </enum>
+
+        <!-- MAV_BATTERY_CHARGE_STATE enum -->
+        <enum name="MAV_BATTERY_CHARGE_STATE">
+            <description>Enumeration for battery charge states</description>
+            <entry value="0" name="MAV_BATTERY_CHARGE_STATE_UNDEFINED">
+                <description>Low battery state is not provided</description>
+            </entry>
+            <entry value="1" name="MAV_BATTERY_CHARGE_STATE_OK">
+                <description>Battery is not in low state</description>
+            </entry>
+            <entry value="2" name="MAV_BATTERY_CHARGE_STATE_LOW">
+                <description>Battery state is low</description>
+            </entry>
+            <entry value="3" name="MAV_BATTERY_CHARGE_STATE_CRITICAL">
+                <description>Battery state is critical</description>
+            </entry>
+            <entry value="4" name="MAV_BATTERY_CHARGE_STATE_EMERGENCY">
+                <description>Battery state is emergency</description>
+            </entry>
+            <entry value="5" name="MAV_BATTERY_CHARGE_STATE_FAILED">
+                <description>Battery is not present</description>
+            </entry>
+            <entry value="6" name="MAV_BATTERY_CHARGE_STATE_UNHEALTHY">
+                <description>Battery is unhealthy</description>
+            </entry>
+            <entry value="7" name="MAV_BATTERY_CHARGE_STATE_CHARGING">
+                <description>Battery is charging</description>
+            </entry>
+        </enum>
+    </enums>
+
+    <messages>
+        <!-- HEARTBEAT message -->
+        <message id="0" name="HEARTBEAT">
+            <description>The heartbeat message shows that a system or component is present and responding.</description>
+            <field type="uint8_t" name="type" enum="MAV_TYPE">Vehicle or component type</field>
+            <field type="uint8_t" name="autopilot" enum="MAV_AUTOPILOT">Autopilot type / class</field>
+            <field type="uint8_t" name="base_mode" enum="MAV_MODE_FLAG">System mode bitmap</field>
+            <field type="uint32_t" name="custom_mode">Custom mode, can be defined per autopilot</field>
+            <field type="uint8_t" name="system_status" enum="MAV_STATE">System status flag</field>
+            <field type="uint8_t" name="mavlink_version">MAVLink version</field>
+        </message>
+
+        <!-- ATTITUDE message (ID 30) - Standard MAVLink message for orientation -->
+        <message id="30" name="ATTITUDE">
+            <description>The attitude in the aeronautical frame (right-handed, Z-down, X-front, Y-right).</description>
+            <field type="uint32_t" name="time_boot_ms" units="ms">Timestamp (time since system boot)</field>
+            <field type="float" name="roll" units="rad">Roll angle (-pi..+pi)</field>
+            <field type="float" name="pitch" units="rad">Pitch angle (-pi..+pi)</field>
+            <field type="float" name="yaw" units="rad">Yaw angle (-pi..+pi)</field>
+            <field type="float" name="rollspeed" units="rad/s">Roll angular speed</field>
+            <field type="float" name="pitchspeed" units="rad/s">Pitch angular speed</field>
+            <field type="float" name="yawspeed" units="rad/s">Yaw angular speed</field>
+        </message>
+
+        <!-- GPS_DATA message -->
+        <message id="101" name="GPS_DATA">
+            <description>GPS position and velocity data</description>
+            <field type="uint32_t" name="time_usec" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint8_t" name="fix_type">GPS fix type (0=no fix, 2=2D fix, 3=3D fix)</field>
+            <field type="int32_t" name="lat" units="degE7">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lon" units="degE7">Longitude in degrees * 1E7</field>
+            <field type="int32_t" name="alt" units="mm">Altitude (MSL) in millimeters</field>
+            <field type="uint16_t" name="eph" units="cm">GPS horizontal dilution of position (HDOP) in cm</field>
+            <field type="uint16_t" name="epv" units="cm">GPS vertical dilution of position (VDOP) in cm</field>
+            <field type="uint16_t" name="vel" units="cm/s">Ground speed in cm/s</field>
+            <field type="uint16_t" name="cog" units="cdeg">Course over ground in degrees * 100</field>
+            <field type="uint8_t" name="satellites_visible">Number of satellites visible</field>
+            <field type="int32_t" name="alt_ellipsoid" units="mm">Altitude (above WGS84 ellipsoid) in millimeters</field>
+            <field type="uint32_t" name="h_acc" units="mm">Position uncertainty in millimeters</field>
+            <field type="uint32_t" name="v_acc" units="mm">Altitude uncertainty in millimeters</field>
+            <field type="uint32_t" name="vel_acc" units="mm/s">Speed uncertainty in mm/s</field>
+            <field type="uint32_t" name="hdg_acc" units="degE5">Heading accuracy in degrees * 1E5</field>
+        </message>
+
+        <!-- BATTERY_DATA message -->
+        <message id="102" name="BATTERY_DATA">
+            <description>Battery status and monitoring data</description>
+            <field type="uint8_t" name="id">Battery ID</field>
+            <field type="uint8_t" name="battery_function" enum="MAV_BATTERY_FUNCTION">Function of the battery</field>
+            <field type="uint8_t" name="type" enum="MAV_BATTERY_TYPE">Type of battery</field>
+            <field type="int16_t" name="temperature" units="cdegC">Temperature of battery in centi-degrees Celsius</field>
+            <field type="uint16_t[10]" name="voltages" units="mV">Individual cell voltages in millivolts</field>
+            <field type="int16_t" name="current_battery" units="cA">Battery current in centiamperes, -1: not available</field>
+            <field type="int32_t" name="current_consumed" units="mAh">Consumed charge in milliampere hours, -1: not available</field>
+            <field type="int32_t" name="energy_consumed" units="hJ">Consumed energy in hectojoules, -1: not available</field>
+            <field type="int8_t" name="battery_remaining" units="%">Remaining battery percentage, -1: not available</field>
+            <field type="int32_t" name="time_remaining" units="s">Remaining battery time in seconds, 0: not available</field>
+            <field type="uint8_t" name="charge_state" enum="MAV_BATTERY_CHARGE_STATE">Battery charge state</field>
+        </message>
+
+        <!-- PING message -->
+        <message id="4" name="PING">
+            <description>A ping message to test system connectivity and measure round-trip time</description>
+            <field type="uint32_t" name="time_usec" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint32_t" name="seq">PING sequence number</field>
+            <field type="uint8_t" name="target_system">System ID</field>
+            <field type="uint8_t" name="target_component">Component ID</field>
+        </message>
+
+        <!-- WHEEL_ENCODERS message -->
+        <message id="42003" name="WHEEL_ENCODERS">
+            <description>Cumulative wheel ticks (CW = +, CCW = –) and the absolute 12-bit AS5600 CAM position used by the jumping mechanism.</description>
+            <field type="uint32_t" name="time_us" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="int32_t" name="left_ticks">Left wheel encoder ticks</field>
+            <field type="int32_t" name="right_ticks">Right wheel encoder ticks</field>
+            <field type="uint16_t" name="cam_pos">12-bit AS5600 CAM position</field>
+        </message>
+
+        <!-- ToF__RANGES message -->
+        <message id="42001" name="TOF_L7CX_RANGES">
+            <description>8×8 zone distances from VL53L7CX in millimetres.</description>
+            <field type="uint32_t" name="time_us" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint16_t[64]" name="range_mm" units="mm">8x8 zone distances array</field>
+        </message>
+
+        <!-- SENSOR_INIT_STATE message -->
+        <message id="103" name="SENSOR_INIT_STATE">
+            <description>Sensor initialization status bitfield</description>
+            <field type="uint32_t" name="time_us" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint32_t" name="sensor_init">Bitfield indicating initialization status of sensors</field>
+        </message>
+
+        <!-- ARMING_STATUS message -->
+        <message id="104" name="ARMING_STATUS">
+            <description>Vehicle arming status and safety state</description>
+            <field type="uint32_t" name="time_us" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint8_t" name="armed">Armed state (0=disarmed, 1=armed)</field>
+        </message>
+
+        <!-- DRIVE_STATUS message -->
+        <message id="105" name="DRIVE_STATUS">
+            <description>Drive system status including wheel RPM and jumping mechanism state</description>
+            <field type="uint32_t" name="time_us" units="us">Timestamp (UNIX Epoch time or time since system boot)</field>
+            <field type="uint8_t" name="arm_disarm">Arm/disarm state (0=disarmed, 1=armed)</field>
+            <field type="int16_t" name="rpm_left_wheel" units="rpm">Left wheel RPM</field>
+            <field type="int16_t" name="rpm_right_wheel" units="rpm">Right wheel RPM</field>
+            <field type="uint8_t" name="jumping">Jumping mechanism state</field>
+        </message>
+    </messages>
+
 </mavlink>
-
