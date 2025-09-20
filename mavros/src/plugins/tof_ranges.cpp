@@ -30,11 +30,28 @@ public:
     {
         enable_node_watch_parameters();
 
+        // Declare and watch parameters
+        raw_topic = node_declare_and_watch_parameter(
+            "raw_topic", "~/raw",
+            [this](const rclcpp::Parameter & p) {
+                raw_topic = p.as_string();
+                RCLCPP_INFO(get_logger(), "TOF raw_topic updated to: %s", raw_topic.c_str());
+            }
+        );
+
+        field_of_view = node_declare_and_watch_parameter(
+            "field_of_view", 0.785,  // 45 degrees default
+            [this](const rclcpp::Parameter & p) {
+                field_of_view = p.as_double();
+                RCLCPP_INFO(get_logger(), "TOF field_of_view updated to: %.3f rad", field_of_view);
+            }
+        );
+
         // Publishers for different representations
-        ranges_raw_pub = node->create_publisher<std_msgs::msg::Float32MultiArray>("~/raw", 10);
+        ranges_raw_pub = node->create_publisher<std_msgs::msg::Float32MultiArray>(raw_topic, 10);
         ranges_cloud_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>("~/cloud", 10);
-        
-        RCLCPP_INFO(get_logger(), "TOF Ranges plugin initialized - waiting for TOF messages (ID 42001)");
+
+        RCLCPP_INFO(get_logger(), "TOF Ranges plugin initialized - FOV: %.3f rad", field_of_view);
     }
 
     Subscriptions get_subscriptions() override
@@ -56,8 +73,10 @@ public:
 private:
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr ranges_raw_pub;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ranges_cloud_pub;
-    
+
     bool first_msg_received = false;
+    std::string raw_topic;
+    double field_of_view;
 
     void handle_tof_ranges(
         const mavlink::mavlink_message_t * msg [[maybe_unused]],

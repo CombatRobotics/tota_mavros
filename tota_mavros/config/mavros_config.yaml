@@ -6,14 +6,25 @@
     tgt_system: 20
     tgt_component: 200
     fcu_protocol: v2.0
-    
+
     # Plugin configuration - TOTA custom plugins + essential standard plugins
     plugin_allowlist:
       # TOTA Custom Plugins
       - tof_ranges         # TOF_L7CX_RANGES (42001)
-      - tof_meta          # TOF_L7CX_META (42002) 
+      - tof_meta          # TOF_L7CX_META (42002)
       - wheel_encoders    # WHEEL_ENCODERS (42003)
       - velocity_control  # Velocity command sender
-      
-      # Essential Standard Plugins  
+
+      # Essential Standard Plugins
       - imu               # IMU data processing
+
+# Plugin parameters
+tof_ranges:
+  ros__parameters:
+    raw_topic: "~/raw"
+    field_of_view: 1.57  # 90 degrees in radians for testing
+
+wheel_encoders:
+  ros__parameters:
+    joint_states_topic: "~/joint_states"
+    ticks_per_revolution: 2048.0  # Testing with different value

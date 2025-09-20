@@ -29,16 +29,33 @@ public:
     {
         enable_node_watch_parameters();
 
+        // Declare and watch parameters
+        joint_states_topic = node_declare_and_watch_parameter(
+            "joint_states_topic", "~/joint_states",
+            [this](const rclcpp::Parameter & p) {
+                joint_states_topic = p.as_string();
+                RCLCPP_INFO(get_logger(), "Wheel encoders joint_states_topic updated to: %s", joint_states_topic.c_str());
+            }
+        );
+
+        ticks_per_revolution = node_declare_and_watch_parameter(
+            "ticks_per_revolution", 1024.0,
+            [this](const rclcpp::Parameter & p) {
+                ticks_per_revolution = p.as_double();
+                RCLCPP_INFO(get_logger(), "Wheel encoders ticks_per_revolution updated to: %.1f", ticks_per_revolution);
+            }
+        );
+
         // Publishers
-        joint_state_pub = node->create_publisher<sensor_msgs::msg::JointState>("~/joint_states", 10);
+        joint_state_pub = node->create_publisher<sensor_msgs::msg::JointState>(joint_states_topic, 10);
         raw_ticks_pub = node->create_publisher<std_msgs::msg::Int32MultiArray>("~/raw_ticks", 10);
-        
+
         // Initialize last tick values for velocity calculation
         last_left_ticks = 0;
         last_right_ticks = 0;
         last_msg_time = node->now();
-        
-        RCLCPP_INFO(get_logger(), "Wheel Encoders plugin initialized - waiting for WHEEL_ENCODERS messages (ID 42003)");
+
+        RCLCPP_INFO(get_logger(), "Wheel Encoders plugin initialized - TPR: %.1f", ticks_per_revolution);
     }
 
     Subscriptions get_subscriptions() override
@@ -51,13 +68,15 @@ public:
 private:
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub;
     rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr raw_ticks_pub;
-    
+
     int32_t last_left_ticks;
     int32_t last_right_ticks;
     rclcpp::Time last_msg_time;
     bool first_msg_received = false;
-    
-    const double TICKS_PER_REVOLUTION = 1024.0;  // Example value
+
+    // Parameters
+    std::string joint_states_topic;
+    double ticks_per_revolution;
     const double WHEEL_RADIUS = 0.05;  // meters
 
     void handle_wheel_encoders(
@@ -93,8 +112,8 @@ private:
         joint_msg.name.push_back("cam_joint");
         
         // Calculate positions (radians)
-        double left_pos = (enc_msg.left_ticks / TICKS_PER_REVOLUTION) * 2.0 * M_PI;
-        double right_pos = (enc_msg.right_ticks / TICKS_PER_REVOLUTION) * 2.0 * M_PI;
+        double left_pos = (enc_msg.left_ticks / ticks_per_revolution) * 2.0 * M_PI;
+        double right_pos = (enc_msg.right_ticks / ticks_per_revolution) * 2.0 * M_PI;
         double cam_pos_rad = (enc_msg.cam_pos / 4096.0) * 2.0 * M_PI;  // 12-bit to radians
         
         joint_msg.position.push_back(left_pos);
@@ -107,8 +126,8 @@ private:
             double left_delta = enc_msg.left_ticks - last_left_ticks;
             double right_delta = enc_msg.right_ticks - last_right_ticks;
             
-            double left_vel = (left_delta / TICKS_PER_REVOLUTION) * 2.0 * M_PI / dt;
-            double right_vel = (right_delta / TICKS_PER_REVOLUTION) * 2.0 * M_PI / dt;
+            double left_vel = (left_delta / ticks_per_revolution) * 2.0 * M_PI / dt;
+            double right_vel = (right_delta / ticks_per_revolution) * 2.0 * M_PI / dt;
             
             joint_msg.velocity.push_back(left_vel);
             joint_msg.velocity.push_back(right_vel);
